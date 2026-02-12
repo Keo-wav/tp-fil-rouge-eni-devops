@@ -45,5 +45,7 @@ jobs:
           DB_NAME: todolist_db
           DB_DIALECT: mysql
           PORT: 3000
-        run: npm test
+        run: |
+          chmod +x ./node_modules/.bin/jest
+          npm test
           
