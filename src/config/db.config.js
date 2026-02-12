@@ -1,9 +1,9 @@
 module.exports = {
-  HOST: 'localhost',
-  USER: 'root',
-  PASSWORD: '',
-  DB: 'todolist_db',
-  dialect: 'mysql',
+  HOST: process.env.DB_HOST || 'localhost',
+  USER: process.env.DB_USER || 'root',
+  PASSWORD: process.env.DB_PASSWORD || 'rootpassword',
+  DB: process.env.DB_NAME || 'todolist_db',
+  dialect: process.env.DB_DIALECT || 'mysql',
   pool: {
     max: 5,
     min: 0,
