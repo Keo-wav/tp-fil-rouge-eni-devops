@@ -5,7 +5,7 @@ on:
     branches: [ajout-workflow-cicd]
   pull_request:
     branches: [ajout-workflow-cicd]
-  workflow_dispatch:
+  # workflow_dispatch:
 
 jobs:
   unit-and-integration-tests:
@@ -20,10 +20,18 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="mysqladmin ping -h localhost -u root -prootpassword"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword 
+      DB_NAME: todolist_db
+      NODE_ENV: dev
 
     steps:
       - name: Checkout code
@@ -35,25 +43,44 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Wait for mysql 
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          for i in {1..40}; do
+            mysql -h 127.0.0.1 -u root -prootpassword -e "SELECT 1" && break
+            echo "MySQL non prêt, j'attends 3s..."
+            sleep 3
+          done
+
+      - name: Test connexion MySQL 
+        run: mysql -h 127.0.0.1 -u root -prootpassword -e "SHOW DATABASES;"
 
       - name: Run tests
-        env: 
-          DB_HOST: 127.0.0.1
-          DB_USER: root
-          DB_PASSWORD: rootpassword
-          DB_NAME: todolist_db
-          DB_DIALECT: mysql
-          PORT: 3000
-        run: |
-          chmod +x ./node_modules/.bin/jest
-          npm test
+        run: npm run test     
 
   docker-build-smoke-test:
     needs: unit-and-integration-tests
     runs-on: ubuntu-latest
+    services:
+      mysql: 
+        image: mysql:8.0 
+        env: 
+          MYSQL_ROOT_PASSWORD: rootpassword 
+          MYSQL_DATABASE: todolist_db 
+        ports: 
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -prootpassword" 
+          --health-interval=10s 
+          --health-timeout=5s
+          --health-retries=5 
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
       
       - name: Build Docker image
         run: docker build -t my-todo-app .
@@ -61,18 +88,21 @@ jobs:
       - name: Run container
         run: |
           docker run -d -p 3000:3000 --name app-container \
-          -e DB_HOST=localhost \
+          -e DB_HOST=127.0.0.1 \
           -e DB_USER=root \
           -e DB_PASSWORD=rootpassword \
           -e DB_NAME=todolist_db \
-          my-todo-app
-          
-      - name: Wait for app to start
-        run: sleep 20
+          --name app my-todo-app
+        
+          for i in {1..20}; do
+            curl -s http://localhost:3000 && break
+            echo "j'attend 3s"
+            sleep 3
+          done
+        
 
       - name: HTTP Smoke Test
         run: |
-          # On vérifie si l'app répond. Si curl reçoit une erreur, le job échoue.
           curl --silent --fail http://localhost:3000 || exit 1
 
       - name: Stop and cleanup
