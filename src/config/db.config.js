@@ -1,7 +1,7 @@
 module.exports = {
-  HOST: 'localhost',
+  HOST: '10.51.101.20',
   USER: 'root',
-  PASSWORD: '',
+  PASSWORD: 'rootpassword',
   DB: 'todolist_db',
   dialect: 'mysql',
   pool: {
