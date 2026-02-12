@@ -5,7 +5,7 @@ on:
     branches: [ajout-workflow-cicd]
   pull_request:
     branches: [ajout-workflow-cicd]
-  workflow_dispatch:
+  # workflow_dispatch:
 
 jobs:
   unit-and-integration-tests:
@@ -48,4 +48,33 @@ jobs:
         run: |
           chmod +x ./node_modules/.bin/jest
           npm test
+
+  docker-build-smoke-test:
+    needs: unit-and-integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t my-todo-app .
+
+      - name: Run container
+        run: |
+          docker run -d -p 3000:3000 --name app-container \
+          -e DB_HOST=localhost \
+          -e DB_USER=root \
+          -e DB_PASSWORD=rootpassword \
+          -e DB_NAME=todolist_db \
+          my-todo-app
           
+      - name: Wait for app to start
+        run: sleep 10
+
+      - name: HTTP Smoke Test
+        run: |
+          # On vérifie si l'app répond. Si curl reçoit une erreur, le job échoue.
+          curl --silent --fail http://localhost:3000 || exit 1
+
+      - name: Stop and cleanup
+        if: always()
+        run: docker stop app-container && docker rm app-container
