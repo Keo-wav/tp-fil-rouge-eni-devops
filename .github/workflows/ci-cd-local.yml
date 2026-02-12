@@ -68,7 +68,7 @@ jobs:
           my-todo-app
           
       - name: Wait for app to start
-        run: sleep 10
+        run: sleep 20
 
       - name: HTTP Smoke Test
         run: |
