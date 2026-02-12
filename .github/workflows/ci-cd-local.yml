@@ -5,7 +5,7 @@ on:
     branches: [ajout-workflow-cicd]
   pull_request:
     branches: [ajout-workflow-cicd]
-  # workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   unit-and-integration-tests:
