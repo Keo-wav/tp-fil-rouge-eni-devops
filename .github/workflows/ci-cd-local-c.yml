@@ -30,6 +30,7 @@ jobs:
       DB_USER: root
       DB_PASSWORD: rootpassword 
       DB_NAME: todolist_db
+      DB_DIALECT: mysql
       NODE_ENV: dev
 
     steps:
